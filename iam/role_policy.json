@@ -1,0 +1,24 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+
+    {
+     "Sid": "AllowListingOfUserFolder",
+     "Action": ["s3:ListBucket"],
+     "Effect": "Allow",
+     "Resource": ["arn:aws:s3:::reinvent2013-blog-demo-cryptofork-data"],
+     "Condition":{"StringLike":{"s3:prefix":["${graph.facebook.com:id}/messages/"]}}
+    },
+
+    {
+      "Sid": "Stmt1384966156000",
+      "Effect": "Allow",
+      "Action": [
+        "s3:*"
+      ],
+      "Resource": [
+        "arn:aws:s3:::reinvent2013-blog-demo-cryptofork-data/${graph.facebook.com:id}/*"
+      ]
+    }
+  ]
+}

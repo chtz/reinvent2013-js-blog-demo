@@ -20,6 +20,8 @@
 
   var loginButton = document.getElementById('login-button');
   var addButton = document.getElementById('add-button');
+  var privkeyTA = document.getElementById('privkey');
+  var pubkeyTA = document.getElementById('pubkey');
   var messageText = document.getElementById('message');
   var messagesUl = document.getElementById('messages');
 
@@ -40,6 +42,19 @@
   }
 
   function displayMessage(msg) {
+	var decrypt = new JSEncrypt();
+	decrypt.setPrivateKey(privkeyTA.value);
+		
+	try {
+		var descrypted = decrypt.decrypt(msg);
+		if (descrypted != null) {
+			msg = descrypted;
+		}
+	}
+	catch (err) {
+		//ignore
+	}
+	
 	var li = document.createElement('li');
 	var txt = document.createTextNode(msg);
 	li.appendChild(txt);
@@ -85,11 +100,16 @@
   function addMessage() {
 	var currentTimeMillis = new Date().getTime();
 	
-	uploadAsset(fbUser + "/messages/" + currentTimeMillis, messageText.value);
+	var plain = messageText.value;
+	var encrypt = new JSEncrypt();
+	encrypt.setPublicKey(pubkeyTA.value);
+	var encrypted = encrypt.encrypt(plain);
 	
-	console.log("Added: " + messageText.value);
+	uploadAsset(fbUser + "/messages/" + currentTimeMillis, encrypted);
+	
+	console.log("Added: " + encrypted);
 
-	displayMessage(messageText.value);
+	displayMessage(encrypted);
 	
 	messageText.value = '';
   }

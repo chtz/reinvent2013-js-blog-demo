@@ -19,9 +19,9 @@
   });
 
   var loginButton = document.getElementById('login-button');
+  var reloadButton = document.getElementById('reload-button');
   var addButton = document.getElementById('add-button');
-  var privkeyTA = document.getElementById('privkey');
-  var pubkeyTA = document.getElementById('pubkey');
+  var keyText = document.getElementById('key');
   var messageText = document.getElementById('message');
   var messagesUl = document.getElementById('messages');
 
@@ -42,23 +42,25 @@
   }
 
   function displayMessage(msg) {
-	var decrypt = new JSEncrypt();
-	decrypt.setPrivateKey(privkeyTA.value);
-		
 	try {
-		var descrypted = decrypt.decrypt(msg);
-		if (descrypted != null) {
-			msg = descrypted;
+		var xdecrypted = CryptoJS.AES.decrypt(msg, keyText.value);
+		
+		console.log("dec: " + xdecrypted.toString(CryptoJS.enc.Utf8));
+		
+		msg = xdecrypted.toString(CryptoJS.enc.Utf8);
+		
+		if (msg != '') {
+			var li = document.createElement('li');
+			var txt = document.createTextNode(msg);
+			li.appendChild(txt);
+			
+			if(messagesUl.firstChild) messagesUl.insertBefore(li,messagesUl.firstChild);
+			else messagesUl.appendChild(li);
 		}
 	}
 	catch (err) {
 		//ignore
 	}
-	
-	var li = document.createElement('li');
-	var txt = document.createTextNode(msg);
-	li.appendChild(txt);
-	messagesUl.appendChild(li);
   }
 
   function loadMessage(key) {
@@ -66,7 +68,7 @@
         Key: key
     };
 
-    s3.getObject(params, function (err, data) { //FIXME iterate
+    s3.getObject(params, function (err, data) { 
         if (err) {
           console.log("Error retrieving asset from S3", err.message);
         } else {
@@ -78,6 +80,10 @@
   }
 
   function loadMessages() {
+	while (messagesUl.firstChild) {
+	    messagesUl.removeChild(messagesUl.firstChild);
+	}
+	
 	var params = {
         Prefix: fbUser + "/messages/"
     };
@@ -88,11 +94,21 @@
         } else {
 		  console.log(data);
 		
+		  var keys = new Array();
+		
 		  for (var i=0; i < data.Contents.length; i++) {
 			var content = data.Contents[i];
 			
-			loadMessage(content.Key);
+			if (content.Key != params.Prefix) {
+				keys.push(content.Key);
+			}
 		  }
+		
+		  keys.sort();
+		  for (var i=0; i < keys.length; i++) {
+			loadMessage(keys[i]);
+		  }
+		
         }
     });
   }
@@ -101,15 +117,14 @@
 	var currentTimeMillis = new Date().getTime();
 	
 	var plain = messageText.value;
-	var encrypt = new JSEncrypt();
-	encrypt.setPublicKey(pubkeyTA.value);
-	var encrypted = encrypt.encrypt(plain);
 	
-	uploadAsset(fbUser + "/messages/" + currentTimeMillis, encrypted);
+	var xencrypted = CryptoJS.AES.encrypt(plain, keyText.value);
 	
-	console.log("Added: " + encrypted);
-
-	displayMessage(encrypted);
+	console.log("enc: " + xencrypted.toString())
+	
+	uploadAsset(fbUser + "/messages/" + currentTimeMillis, xencrypted.toString());
+	
+	displayMessage(xencrypted.toString());
 	
 	messageText.value = '';
   }
@@ -139,8 +154,6 @@
 			fbUser = response.authResponse.userID;
 			
 			uploadAsset(fbUser + "/lastlog", JSON.stringify(new Date()));
-			
-			loadMessages();
           }
         });
       } else {
@@ -164,4 +177,5 @@
 
   loginButton.addEventListener('click', adminLogin, false);
   addButton.addEventListener('click', addMessage, false);
+  reloadButton.addEventListener('click', loadMessages, false);
 })();

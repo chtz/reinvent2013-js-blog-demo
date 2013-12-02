@@ -1,0 +1,7 @@
+appInfo = {
+  appId: 'FACEBOOK APP ID',
+  providerId: 'graph.facebook.com',
+  roleArn: 'arn:aws:iam::AWS ACCOUNT ID:role/ROLE NAME',
+  region: 'eu-west-1',
+  s3bucket: 'DATA S3-BUCKET NAME',
+};
